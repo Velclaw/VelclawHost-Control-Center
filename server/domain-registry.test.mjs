@@ -21,6 +21,6 @@ test("no domain is represented as automatically available", () => {
   for (const domain of DOMAINS) {
     assert.ok(domain.status);
     assert.ok(domain.note);
-    assert.equal("available", domain.status);
+    assert.notEqual(domain.status, "available");
   }
 });
