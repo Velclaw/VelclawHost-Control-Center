@@ -22,7 +22,7 @@ export default async (event) => {
   if (session.user.role !== "admin") return response(403, { error: "admin_required" });
 
   const token = process.env.NETLIFY_AUTH_TOKEN;
-  const siteId = process.env.NETLIFY_SITE_ID;
+  const siteId = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
   if (!token || !siteId) return response(503, { error: "netlify_provider_not_configured" });
 
   try {
