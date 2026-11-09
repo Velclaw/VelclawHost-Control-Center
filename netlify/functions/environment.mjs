@@ -19,7 +19,7 @@ function parseBody(event) {
   try { return JSON.parse(event.body); } catch { return null; }
 }
 
-export default async (event) => {
+export const handler = async (event) => {
   const method = event.httpMethod || "GET";
   if (!["GET", "POST", "PUT", "DELETE"].includes(method)) {
     return response(405, { error: "method_not_allowed" }, { allow: "GET, POST, PUT, DELETE" });
