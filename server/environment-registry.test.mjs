@@ -22,10 +22,13 @@ test("invalid keys and malformed provider records are discarded", () => {
 });
 
 test("input validation constrains keys, values, contexts and branch names", () => {
-  assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret" }).context, "all");
+  assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret" }), null);
+  assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret", context: "deploy-preview" }).context, "deploy-preview");
   assert.equal(validateEnvironmentInput({ key: "API TOKEN", value: "secret" }), null);
   assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "" }), null);
   assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret", context: "unknown" }), null);
+  assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret", context: "production" }), null);
+  assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret", context: "all" }), null);
   assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret", context: "branch", contextParameter: "../main" }), null);
   assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret", context: "branch", contextParameter: "staging" }).contextParameter, "staging");
 });
