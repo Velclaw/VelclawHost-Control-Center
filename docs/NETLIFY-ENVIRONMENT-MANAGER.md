@@ -4,11 +4,11 @@ The Environment page is an admin-only control surface for site-scoped Netlify en
 
 ## Required Netlify Function variables
 
-Configure these directly in Netlify Project configuration > Environment variables. Never commit them or send them through chat:
+Configure this directly in Netlify Project configuration > Environment variables. Never commit it or send it through chat:
 
-- `NETLIFY_AUTH_TOKEN`: a Netlify personal access token with the minimum permissions needed to manage environment variables for this site.
-- `NETLIFY_SITE_ID`: optional override; Netlify Functions also provides the reserved `SITE_ID` variable at runtime.
-- `NETLIFY_ACCOUNT_ID`: optional override; defaults to the verified Netlify team/account ID for this project.
+- `NETLIFY_AUTH_TOKEN`: a Netlify personal access token with the minimum permissions needed to manage environment variables for this site. This is the only required provider variable. Netlify supplies `SITE_ID` at runtime, and the verified account ID is a code default; `NETLIFY_SITE_ID` and `NETLIFY_ACCOUNT_ID` are optional overrides.
+
+All writes are restricted to the `deploy-preview` context. The backend rejects `all`, `production`, development, and branch contexts. It also refuses to update or delete a variable unless every existing value is explicitly scoped to `deploy-preview`.
 - Existing GitHub OAuth/session variables: `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`, `GITHUB_OAUTH_CALLBACK_URL`, `SESSION_SECRET`, `ADMIN_GITHUB_USERS`, and `SITE_URL`.
 
 The environment manager returns metadata only. Secret values are never included in GET responses or written to browser storage. New and updated values are always marked secret and receive the Functions scope only. The UI requires a confirmation before overwriting or deleting an existing key. Deletion is permanent.
