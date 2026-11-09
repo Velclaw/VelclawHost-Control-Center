@@ -7,7 +7,7 @@ The Environment page is an admin-only control surface for site-scoped Netlify en
 Configure these directly in Netlify Project configuration > Environment variables. Never commit them or send them through chat:
 
 - `NETLIFY_AUTH_TOKEN`: a Netlify personal access token with the minimum permissions needed to manage environment variables for this site.
-- `NETLIFY_SITE_ID`: `3bf8f1cd-96a2-4126-8146-8763936e44c4` for the current Control Center site.
+- `NETLIFY_SITE_ID`: optional override; Netlify Functions also provides the reserved `SITE_ID` variable at runtime.
 - `NETLIFY_ACCOUNT_ID`: the Netlify team/account ID that owns the site.
 - Existing GitHub OAuth/session variables: `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`, `GITHUB_OAUTH_CALLBACK_URL`, `SESSION_SECRET`, `ADMIN_GITHUB_USERS`, and `SITE_URL`.
 
