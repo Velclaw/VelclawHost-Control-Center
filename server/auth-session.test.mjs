@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { adminUsernames, cookieValue, isOAuthConfigured, openSession, safeGitHubUser, sameOrigin, sealSession } from "./auth-session.mjs";
+import { adminUsernames, cookieValue, isOAuthConfigured, oauthCallbackUrl, openSession, safeGitHubUser, sameOrigin, sealSession } from "./auth-session.mjs";
 
 const secret = "test-session-secret-with-at-least-32-characters";
 
@@ -20,13 +20,25 @@ test("expired and tampered sessions are rejected", () => {
   assert.equal(openSession(value.slice(0, -2) + "aa", secret, now), null);
 });
 
-test("OAuth configuration requires callback and strong session secret", () => {
-  assert.equal(isOAuthConfigured({
+test("OAuth callback URL is selected by Netlify context", () => {
+  const env = {
+    GITHUB_OAUTH_CALLBACK_URL: "https://production.example/.netlify/functions/auth-callback",
+    GITHUB_OAUTH_CALLBACK_URL_PREVIEW: "https://deploy-preview-19--velclawhost-control-center.netlify.app/.netlify/functions/auth-callback"
+  };
+  assert.equal(oauthCallbackUrl({ ...env, CONTEXT: "deploy-preview" }), env.GITHUB_OAUTH_CALLBACK_URL_PREVIEW);
+  assert.equal(oauthCallbackUrl({ ...env, CONTEXT: "production" }), env.GITHUB_OAUTH_CALLBACK_URL);
+});
+
+test("OAuth configuration requires context-specific callback and strong session secret", () => {
+  const base = {
     GITHUB_OAUTH_CLIENT_ID: "id",
     GITHUB_OAUTH_CLIENT_SECRET: "secret",
     GITHUB_OAUTH_CALLBACK_URL: "https://example.net/callback",
     SESSION_SECRET: secret
-  }), true);
+  };
+  assert.equal(isOAuthConfigured(base), true);
+  assert.equal(isOAuthConfigured({ ...base, CONTEXT: "deploy-preview" }), false);
+  assert.equal(isOAuthConfigured({ ...base, CONTEXT: "deploy-preview", GITHUB_OAUTH_CALLBACK_URL_PREVIEW: "https://preview.example/callback" }), true);
   assert.equal(isOAuthConfigured({ GITHUB_OAUTH_CLIENT_ID: "id" }), false);
 });
 

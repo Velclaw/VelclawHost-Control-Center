@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { adminUsernames, cookieValue, isOAuthConfigured, OAUTH_STATE_COOKIE, safeGitHubUser, sealSession, SESSION_COOKIE } from "../../server/auth-session.mjs";
+import { adminUsernames, cookieValue, isOAuthConfigured, oauthCallbackUrl, OAUTH_STATE_COOKIE, safeGitHubUser, sealSession, SESSION_COOKIE } from "../../server/auth-session.mjs";
 
 const clearState = `${OAUTH_STATE_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`;
 const clearSession = `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`;
@@ -18,7 +18,8 @@ const equal = (a, b) => {
 };
 
 export const handler = async (event) => {
-  const base = process.env.SITE_URL || "https://velclawhost-control-center.netlify.app";
+  const callbackUrl = oauthCallbackUrl();
+  const base = callbackUrl ? new URL(callbackUrl).origin : (process.env.SITE_URL || "https://velclawhost-control-center.netlify.app");
   const fail = (reason) => redirect(new URL(`/?auth_error=${encodeURIComponent(reason)}`, base).toString(), [clearState, clearSession]);
   if (!isOAuthConfigured()) return fail("oauth_not_configured");
 
@@ -36,7 +37,7 @@ export const handler = async (event) => {
         client_id: process.env.GITHUB_OAUTH_CLIENT_ID,
         client_secret: process.env.GITHUB_OAUTH_CLIENT_SECRET,
         code,
-        redirect_uri: process.env.GITHUB_OAUTH_CALLBACK_URL
+        redirect_uri: callbackUrl
       }),
       signal: AbortSignal.timeout(8000)
     });
