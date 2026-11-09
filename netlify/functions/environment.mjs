@@ -30,7 +30,7 @@ export default async (event) => {
   if (method !== "GET" && !sameOrigin(event)) return response(403, { error: "same_origin_required" });
 
   const token = process.env.NETLIFY_AUTH_TOKEN;
-  const siteId = process.env.NETLIFY_SITE_ID;
+  const siteId = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
   const accountId = process.env.NETLIFY_ACCOUNT_ID;
   if (!token || !siteId || !accountId || !/^[A-Za-z0-9-]{1,100}$/.test(accountId)) {
     return response(503, { error: "netlify_provider_not_configured" });
