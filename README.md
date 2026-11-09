@@ -23,3 +23,13 @@ This is the frontend foundation only. GitHub OAuth, Netlify OAuth/API integratio
 
 ## Security
 Never put provider tokens in `VITE_*` variables or browser code. OAuth exchange and provider API calls must run server-side. Production and destructive operations require explicit authorization and role checks.
+
+## Read-only GitHub API phase
+
+Netlify Functions expose:
+- `/.netlify/functions/health`
+- `/.netlify/functions/projects`
+
+The projects endpoint queries only the three fixed public repositories listed in `server/project-registry.mjs`. It exposes a strict metadata allowlist and has no write operations. The dashboard reads this endpoint when served through Netlify.
+
+Run `npm test` for registry allowlist and metadata-redaction tests, and `npm run check:functions` to validate function syntax.
