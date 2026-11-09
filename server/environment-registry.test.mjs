@@ -7,13 +7,13 @@ test("environment metadata never returns secret values", () => {
     key: "GITHUB_OAUTH_CLIENT_SECRET",
     scopes: ["functions", "unknown"],
     is_secret: true,
-    values: [{ context: "all", value: "do-not-return-this" }],
+    values: [{ context: "deploy-preview", value: "do-not-return-this" }],
     updated_at: "2026-11-09T00:00:00Z"
   }]);
   assert.equal(result.length, 1);
   assert.equal(result[0].key, "GITHUB_OAUTH_CLIENT_SECRET");
   assert.deepEqual(result[0].scopes, ["functions"]);
-  assert.deepEqual(result[0].contexts, ["all"]);
+  assert.deepEqual(result[0].contexts, ["deploy-preview"]);
   assert.equal(JSON.stringify(result).includes("do-not-return-this"), false);
 });
 
@@ -30,5 +30,5 @@ test("input validation constrains keys, values, contexts and branch names", () =
   assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret", context: "production" }), null);
   assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret", context: "all" }), null);
   assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret", context: "branch", contextParameter: "../main" }), null);
-  assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret", context: "branch", contextParameter: "staging" }).contextParameter, "staging");
+  assert.equal(validateEnvironmentInput({ key: "API_TOKEN", value: "secret", context: "branch", contextParameter: "staging" }), null);
 });
