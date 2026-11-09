@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { isOAuthConfigured, OAUTH_STATE_COOKIE } from "../../server/auth-session.mjs";
+import { isOAuthConfigured, oauthCallbackUrl, OAUTH_STATE_COOKIE } from "../../server/auth-session.mjs";
 
 const secureCookie = (value) => `${OAUTH_STATE_COOKIE}=${value}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=600`;
 
@@ -15,7 +15,7 @@ export const handler = async () => {
   const state = randomBytes(32).toString("base64url");
   const authorize = new URL("https://github.com/login/oauth/authorize");
   authorize.searchParams.set("client_id", process.env.GITHUB_OAUTH_CLIENT_ID);
-  authorize.searchParams.set("redirect_uri", process.env.GITHUB_OAUTH_CALLBACK_URL);
+  authorize.searchParams.set("redirect_uri", oauthCallbackUrl());
   authorize.searchParams.set("scope", "read:user");
   authorize.searchParams.set("state", state);
 
