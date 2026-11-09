@@ -3,13 +3,15 @@
   "private": true,
   "version": "0.2.0",
   "type": "module",
-  "engines": { "node": ">=20.9.0" },
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test server/*.test.mjs",
-    "check:functions": "node --check netlify/functions/health.mjs && node --check netlify/functions/projects.mjs"
+    "check:functions": "node --check netlify/functions/health.mjs && node --check netlify/functions/projects.mjs && node --check netlify/functions/domains.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
