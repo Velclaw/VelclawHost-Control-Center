@@ -17,9 +17,6 @@ jobs:
     # Never expose Netlify credentials to fork-originated pull requests.
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    env:
-      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
     steps:
       - name: Checkout pull request
         uses: actions/checkout@v4
@@ -37,16 +34,23 @@ jobs:
 
       - name: Skip deploy when Netlify secrets are not configured
         if: env.NETLIFY_AUTH_TOKEN == '' || env.NETLIFY_SITE_ID == ''
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: |
           echo "::notice::Preview build passed. Add NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID to repository Actions secrets to enable the Netlify draft deploy."
 
       - name: Create Netlify draft deploy
         if: env.NETLIFY_AUTH_TOKEN != '' && env.NETLIFY_SITE_ID != ''
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         shell: bash
         run: |
           set -euo pipefail
           OUTPUT="$(npx --yes netlify-cli@23.11.0 deploy \
             --dir=dist \
+            --no-build \
             --site="$NETLIFY_SITE_ID" \
             --message="Preview for PR #${{ github.event.pull_request.number }}" \
             --json)"
