@@ -1,6 +1,6 @@
 import { cookieValue, isOAuthConfigured, openSession, SESSION_COOKIE } from "../../server/auth-session.mjs";
 
-export default async (event) => {
+export const handler = async (event) => {
   const session = openSession(cookieValue(event.headers?.cookie, SESSION_COOKIE));
   return {
     statusCode: 200,
