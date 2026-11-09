@@ -9,7 +9,7 @@ Staging-first control plane for repositories and hosting deployments.
 - CI build workflow.
 
 ## Current implementation boundary
-This is the frontend foundation only. GitHub OAuth, Netlify OAuth/API integration, deployment actions, environment-variable management, domain operations, audit logs and server provisioning are not implemented yet. The UI deliberately labels integrations as not connected and does not fabricate deployment data.
+GitHub OAuth identity, encrypted sessions and the initial admin/member role claim are implemented in the staging branch. They remain inactive until the Netlify Preview environment variables documented in `docs/GITHUB-OAUTH-SETUP.md` are configured. Netlify deployment management, environment-variable management, domain mutations, audit logs and server provisioning are not implemented yet. Existing Projects and Domains APIs remain read-only; the UI does not fabricate deployment data.
 
 ## Development
 - Node.js 20.9+
