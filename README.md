@@ -33,3 +33,15 @@ Netlify Functions expose:
 The projects endpoint queries only the three fixed public repositories listed in `server/project-registry.mjs`. It exposes a strict metadata allowlist and has no write operations. The dashboard reads this endpoint when served through Netlify.
 
 Run `npm test` for registry allowlist and metadata-redaction tests, and `npm run check:functions` to validate function syntax.
+
+## Read-only Cloudflare domain inventory
+
+The dashboard's Domains section reads `/.netlify/functions/domains`, backed by `server/domain-registry.mjs`. The registry contains a dated snapshot of nine zones and observed DNS-routing summaries from the connected Cloudflare account.
+
+This is intentionally a read-only snapshot:
+- It does not create, update, or delete DNS records.
+- It does not claim a domain or subdomain is available based only on the snapshot.
+- Existing Vercel, Netlify, Cloudflare Gateway, Render, wildcard, email, and verification records must be preserved.
+- Zone status (active/pending/initializing) is not equivalent to website health or provider-side domain verification.
+
+Before enabling live synchronization or domain assignment, configure a least-privilege Cloudflare API token as a server-side Netlify environment variable and add provider-side hostname verification. Never expose that token to the browser or commit it to Git.
