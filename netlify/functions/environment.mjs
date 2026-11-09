@@ -37,10 +37,7 @@ export default async (event) => {
   }
 
   const base = `https://api.netlify.com/api/v1/accounts/${encodeURIComponent(accountId)}/env`;
-  const url = (key = "") => {
-    const suffix = key ? `/${encodeURIComponent(key)}` : "";
-    return `${base}${suffix}${key ? "?" : "?"}site_id=${encodeURIComponent(siteId)}`;
-  };
+  const url = (key = "") => `${base}${key ? `/${encodeURIComponent(key)}` : ""}?site_id=${encodeURIComponent(siteId)}`;
   const request = async (path, options = {}) => fetch(path, {
     ...options,
     headers: {
@@ -53,11 +50,23 @@ export default async (event) => {
     signal: AbortSignal.timeout(8000)
   });
 
+  const isPreviewOnly = async (key) => {
+    const upstream = await request(url(key));
+    if (upstream.status === 404) return { exists: false, previewOnly: false };
+    if (!upstream.ok) throw new Error("provider_unavailable");
+    const item = await upstream.json();
+    const values = Array.isArray(item?.values) ? item.values : [];
+    return {
+      exists: true,
+      previewOnly: values.length > 0 && values.every((value) => value?.context === "deploy-preview")
+    };
+  };
+
   try {
     if (method === "GET") {
       const upstream = await request(url());
       if (!upstream.ok) return response(upstream.status === 401 || upstream.status === 403 ? 502 : 503, { error: "netlify_provider_unavailable" });
-      return response(200, { variables: safeEnvironmentVariables(await upstream.json()), readOnlyValues: true });
+      return response(200, { variables: safeEnvironmentVariables(await upstream.json()), readOnlyValues: true, writeContext: "deploy-preview" });
     }
 
     if (method === "DELETE") {
@@ -65,21 +74,28 @@ export default async (event) => {
       if (!input || typeof input.key !== "string" || !/^[A-Za-z_][A-Za-z0-9_]{0,99}$/.test(input.key)) {
         return response(400, { error: "invalid_environment_key" });
       }
+      const current = await isPreviewOnly(input.key);
+      if (!current.exists) return response(404, { error: "environment_variable_not_found" });
+      if (!current.previewOnly) return response(409, { error: "staging_only_variable_required" });
       const upstream = await request(url(input.key), { method: "DELETE" });
       if (!upstream.ok) return response(upstream.status === 404 ? 404 : 502, { error: "environment_delete_failed" });
-      return response(200, { deleted: true, key: input.key });
+      return response(200, { deleted: true, key: input.key, context: "deploy-preview" });
     }
 
     const input = validateEnvironmentInput(parseBody(event));
     if (!input) return response(400, { error: "invalid_environment_input" });
+    if (input.context !== "deploy-preview") return response(403, { error: "staging_context_only" });
+
+    if (method === "PUT") {
+      const current = await isPreviewOnly(input.key);
+      if (!current.exists) return response(404, { error: "environment_variable_not_found" });
+      if (!current.previewOnly) return response(409, { error: "staging_only_variable_required" });
+    }
+
     const payload = {
       key: input.key,
       scopes: ["functions"],
-      values: [{
-        context: input.context,
-        ...(input.contextParameter ? { context_parameter: input.contextParameter } : {}),
-        value: input.value
-      }],
+      values: [{ context: "deploy-preview", value: input.value }],
       is_secret: true
     };
     const target = method === "POST" ? url() : url(input.key);
@@ -92,7 +108,7 @@ export default async (event) => {
     try { saved = await upstream.json(); } catch {}
     return response(method === "POST" ? 201 : 200, {
       saved: true,
-      variable: safeEnvironmentVariables(saved ? [saved] : [])[0] ?? { key: input.key, scopes: ["functions"], contexts: [input.context], isSecret: true, updatedAt: null }
+      variable: safeEnvironmentVariables(saved ? [saved] : [])[0] ?? { key: input.key, scopes: ["functions"], contexts: ["deploy-preview"], isSecret: true, updatedAt: null }
     });
   } catch {
     return response(503, { error: "netlify_provider_unavailable" });
