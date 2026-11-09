@@ -8,7 +8,7 @@ Configure these directly in Netlify Project configuration > Environment variable
 
 - `NETLIFY_AUTH_TOKEN`: a Netlify personal access token with the minimum permissions needed to manage environment variables for this site.
 - `NETLIFY_SITE_ID`: optional override; Netlify Functions also provides the reserved `SITE_ID` variable at runtime.
-- `NETLIFY_ACCOUNT_ID`: the Netlify team/account ID that owns the site.
+- `NETLIFY_ACCOUNT_ID`: optional override; defaults to the verified Netlify team/account ID for this project.
 - Existing GitHub OAuth/session variables: `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`, `GITHUB_OAUTH_CALLBACK_URL`, `SESSION_SECRET`, `ADMIN_GITHUB_USERS`, and `SITE_URL`.
 
 The environment manager returns metadata only. Secret values are never included in GET responses or written to browser storage. New and updated values are always marked secret and receive the Functions scope only. The UI requires a confirmation before overwriting or deleting an existing key. Deletion is permanent.
