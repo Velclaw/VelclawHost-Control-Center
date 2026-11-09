@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import projectsHandler from "../netlify/functions/projects.mjs";
-import healthHandler from "../netlify/functions/health.mjs";
+import { handler as projectsHandler } from "../netlify/functions/projects.mjs";
+import { handler as healthHandler } from "../netlify/functions/health.mjs";
 
 test("health endpoint identifies staging and keeps production actions disabled", async () => {
   const response = await healthHandler();
