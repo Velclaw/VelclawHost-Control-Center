@@ -1,6 +1,6 @@
 import { sameOrigin, OAUTH_STATE_COOKIE, SESSION_COOKIE } from "../../server/auth-session.mjs";
 
-export default async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: { allow: "POST", "cache-control": "no-store" }, body: "" };
   }
