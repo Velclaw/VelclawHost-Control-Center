@@ -5,6 +5,12 @@ export const OAUTH_STATE_COOKIE = "vh_oauth_state";
 export const SESSION_TTL_SECONDS = 60 * 60 * 12;
 const b64url = (value) => Buffer.from(value).toString("base64url");
 
+export function oauthCallbackUrl(env = process.env) {
+  return env.CONTEXT === "deploy-preview"
+    ? env.GITHUB_OAUTH_CALLBACK_URL_PREVIEW
+    : env.GITHUB_OAUTH_CALLBACK_URL;
+}
+
 function sessionKey(secret = process.env.SESSION_SECRET) {
   if (typeof secret !== "string" || secret.length < 32) {
     throw new Error("SESSION_SECRET must contain at least 32 characters");
@@ -16,7 +22,7 @@ export function isOAuthConfigured(env = process.env) {
   return Boolean(
     env.GITHUB_OAUTH_CLIENT_ID &&
     env.GITHUB_OAUTH_CLIENT_SECRET &&
-    env.GITHUB_OAUTH_CALLBACK_URL &&
+    oauthCallbackUrl(env) &&
     typeof env.SESSION_SECRET === "string" &&
     env.SESSION_SECRET.length >= 32
   );
