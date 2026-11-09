@@ -1,5 +1,5 @@
 const ALLOWED_SCOPES = new Set(["builds", "functions", "runtime", "post_processing"]);
-const ALLOWED_CONTEXTS = new Set(["all", "dev", "branch-deploy", "deploy-preview", "production", "branch"]);
+const ALLOWED_CONTEXTS = new Set(["deploy-preview"]);
 
 export function safeEnvironmentVariable(item) {
   if (!item || typeof item !== "object" || typeof item.key !== "string" ||
