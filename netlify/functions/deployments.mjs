@@ -12,7 +12,7 @@ const response = (statusCode, body) => ({
   body: JSON.stringify(body)
 });
 
-export default async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "GET") {
     return { ...response(405, { error: "method_not_allowed" }), headers: { ...response(405, {}).headers, allow: "GET" } };
   }

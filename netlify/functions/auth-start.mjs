@@ -3,7 +3,7 @@ import { isOAuthConfigured, OAUTH_STATE_COOKIE } from "../../server/auth-session
 
 const secureCookie = (value) => `${OAUTH_STATE_COOKIE}=${value}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=600`;
 
-export default async () => {
+export const handler = async () => {
   if (!isOAuthConfigured()) {
     return {
       statusCode: 503,

@@ -17,7 +17,7 @@ const equal = (a, b) => {
   return left.length === right.length && timingSafeEqual(left, right);
 };
 
-export default async (event) => {
+export const handler = async (event) => {
   const base = process.env.SITE_URL || "https://velclawhost-control-center.netlify.app";
   const fail = (reason) => redirect(new URL(`/?auth_error=${encodeURIComponent(reason)}`, base).toString(), [clearState, clearSession]);
   if (!isOAuthConfigured()) return fail("oauth_not_configured");

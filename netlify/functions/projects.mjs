@@ -6,7 +6,7 @@ const headers = {
   "x-content-type-options": "nosniff"
 };
 
-export default async () => {
+export const handler = async () => {
   const projects = await Promise.all(PROJECTS.map(async (project) => {
     try {
       const response = await fetch(`https://api.github.com/repos/${project.repository}`, {
