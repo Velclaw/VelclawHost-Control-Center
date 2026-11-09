@@ -11,7 +11,7 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test server/*.test.mjs",
-    "check:functions": "node --check netlify/functions/health.mjs && node --check netlify/functions/projects.mjs && node --check netlify/functions/domains.mjs"
+    "check:functions": "node --check netlify/functions/health.mjs && node --check netlify/functions/projects.mjs && node --check netlify/functions/domains.mjs && node --check netlify/functions/auth-me.mjs && node --check netlify/functions/auth-start.mjs && node --check netlify/functions/auth-callback.mjs && node --check netlify/functions/auth-logout.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
