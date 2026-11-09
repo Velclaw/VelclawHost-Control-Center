@@ -22,7 +22,7 @@ export default async (event) => {
   const fail = (reason) => redirect(new URL(`/?auth_error=${encodeURIComponent(reason)}`, base).toString(), [clearState, clearSession]);
   if (!isOAuthConfigured()) return fail("oauth_not_configured");
 
-  const params = new URLSearchParams(event.rawQuery || "");
+  const params = new URLSearchParams(event.rawQuery || new URLSearchParams(event.queryStringParameters || {}).toString());
   const code = params.get("code");
   const state = params.get("state");
   const storedState = cookieValue(event.headers?.cookie, OAUTH_STATE_COOKIE);
