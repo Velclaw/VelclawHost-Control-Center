@@ -92,8 +92,10 @@ test("fork pull requests cannot run the preview job", () => {
 });
 
 test("deploy requires both secrets and skip notice covers every missing-secret case", () => {
-  assert.match(workflow, /^      NETLIFY_AUTH_TOKEN: \$\{\{ secrets.NETLIFY_AUTH_TOKEN \}\}$/m);
-  assert.match(workflow, /^      NETLIFY_SITE_ID: \$\{\{ secrets.NETLIFY_SITE_ID \}\}$/m);
+  for (const source of [skipStep, deployStep]) {
+    assert.match(source, /^        env:\n          NETLIFY_AUTH_TOKEN: \$\{\{ secrets.NETLIFY_AUTH_TOKEN \}\}\n          NETLIFY_SITE_ID: \$\{\{ secrets.NETLIFY_SITE_ID \}\}$/m);
+  }
+  assert.doesNotMatch(workflow, /^  env:/m);
   for (const token of ["", "synthetic-token"]) {
     for (const site of ["", "synthetic-site"]) {
       const context = { env: { NETLIFY_AUTH_TOKEN: token, NETLIFY_SITE_ID: site } };
@@ -122,7 +124,7 @@ for (const [name, response, url] of [
   test(`draft upload ${name}`, t => {
     const result = runDeploy(t, JSON.stringify(response));
     assert.equal(result.status, 0, result.stderr);
-    assert.deepEqual(result.args, ["--yes", "netlify-cli@23.11.0", "deploy", "--dir=dist", "--site=synthetic-site-id", "--message=Preview for PR #42", "--json"]);
+    assert.deepEqual(result.args, ["--yes", "netlify-cli@23.11.0", "deploy", "--dir=dist", "--no-build", "--site=synthetic-site-id", "--message=Preview for PR #42", "--json"]);
     assert.ok(result.stdout.includes(`Netlify draft preview: ${url}\n`));
     assert.equal(result.stdout.includes("synthetic-test-token"), false);
   });
