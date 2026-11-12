@@ -76,6 +76,7 @@ test("preview runs only for the supported pull request events targeting main", (
   assert.equal(trigger.includes("pull_request_target"), false);
   assert.deepEqual([...trigger.matchAll(/^  ([\w]+):/gm)].map(match => match[1]), ["pull_request"]);
   assert.match(workflow, /^permissions:\n  contents: read\n/m);
+  assert.match(workflow, /uses: actions\\/checkout@v4\\n        with:\\n          persist-credentials: false/);
   assert.match(workflow, /^concurrency:\n  group: netlify-preview-pr-\$\{\{ github.event.pull_request.number \}\}\n  cancel-in-progress: true$/m);
 });
 
