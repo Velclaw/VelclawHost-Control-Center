@@ -1,0 +1,59 @@
+name: Netlify Preview Deploy
+
+on:
+  workflow_run:
+    workflows: ["Netlify Preview Build"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: netlify-preview-deploy-${{ github.event.workflow_run.id }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # This workflow runs from the default branch. Only deploy successful PR
+    # builds from this same repository when the PR targets main.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.pull_requests[0].base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download static preview artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: netlify-preview-dist
+          path: dist/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Skip deploy when Netlify secrets are not configured
+        if: env.NETLIFY_AUTH_TOKEN == '' || env.NETLIFY_SITE_ID == ''
+        run: |
+          echo "::notice::Preview build passed. Add NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID to repository Actions secrets to enable the Netlify draft deploy."
+
+      - name: Create Netlify draft deploy
+        if: env.NETLIFY_AUTH_TOKEN != '' && env.NETLIFY_SITE_ID != ''
+        shell: bash
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          set -euo pipefail
+          OUTPUT="$(npx --yes netlify-cli@23.11.0 deploy \
+            --dir=dist \
+            --site="$NETLIFY_SITE_ID" \
+            --message="Preview for PR #${{ github.event.workflow_run.pull_requests[0].number }}" \
+            --json)"
+          PREVIEW_URL="$(node -e 'const result = JSON.parse(process.argv[1]); process.stdout.write(result.deploy_url || result.deploy_ssl_url || "")' "$OUTPUT")"
+          if [ -z "$PREVIEW_URL" ]; then
+            echo "::error::Netlify CLI did not return a preview URL."
+            exit 1
+          fi
+          echo "Netlify draft preview: $PREVIEW_URL"
