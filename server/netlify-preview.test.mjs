@@ -2,56 +2,48 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const workflow = readFileSync(new URL("../.github/workflows/netlify-preview.yml", import.meta.url), "utf8");
-const readStep = (name) => {
-  const marker = `      - name: ${name}\n`;
-  const start = workflow.indexOf(marker);
-  assert.notEqual(start, -1, `Missing step: ${name}`);
-  const end = workflow.indexOf("\n      - name:", start + marker.length);
-  return workflow.slice(start + marker.length, end < 0 ? undefined : end);
-};
+const build = readFileSync(new URL("../.github/workflows/netlify-preview.yml", import.meta.url), "utf8");
+const deploy = readFileSync(new URL("../.github/workflows/netlify-preview-deploy.yml", import.meta.url), "utf8");
 
-test("Preview runs only for same-repository pull requests targeting main", () => {
-  assert.match(workflow, /^on:\n  pull_request:\n    branches: \[main\]/m);
-  assert.match(workflow, /^    if: github\.event\.pull_request\.head\.repo\.full_name == github\.repository$/m);
-  assert.match(workflow, /^permissions:\n  contents: read$/m);
-  assert.match(workflow, /^concurrency:\n  group: netlify-preview-pr-\$\{\{ github\.event\.pull_request\.number \}\}\n  cancel-in-progress: true$/m);
+test("PR workflow builds only and uploads a short-lived static artifact", () => {
+  assert.match(build, /^on:\n  pull_request:\n    branches: \[main\]/m);
+  assert.match(build, /^permissions:\n  contents: read$/m);
+  assert.match(build, /uses: actions\/checkout@v4\n        with:\n          persist-credentials: false/);
+  assert.match(build, /run: npm ci/);
+  assert.match(build, /run: npm run build/);
+  assert.match(build, /uses: actions\/upload-artifact@v4/);
+  assert.match(build, /name: netlify-preview-dist/);
+  assert.match(build, /path: dist\//);
+  assert.match(build, /retention-days: 1/);
+  assert.doesNotMatch(build, /secrets\.|NETLIFY_AUTH_TOKEN|NETLIFY_SITE_ID|netlify-cli|--prod/);
 });
 
-test("Netlify credentials are not exposed to install or build steps", () => {
-  const install = readStep("Install dependencies");
-  const build = readStep("Build preview");
-  assert.doesNotMatch(install, /NETLIFY_AUTH_TOKEN|NETLIFY_SITE_ID|secrets\./);
-  assert.doesNotMatch(build, /NETLIFY_AUTH_TOKEN|NETLIFY_SITE_ID|secrets\./);
-  assert.doesNotMatch(workflow, /^  env:/m);
+test("trusted deployment workflow runs only after successful same-repository PR builds targeting main", () => {
+  assert.match(deploy, /^on:\n  workflow_run:\n    workflows: \["Netlify Preview Build"\]\n    types: \[completed\]/m);
+  assert.match(deploy, /github\.event\.workflow_run\.conclusion == 'success'/);
+  assert.match(deploy, /github\.event\.workflow_run\.event == 'pull_request'/);
+  assert.match(deploy, /github\.event\.workflow_run\.head_repository\.full_name == github\.repository/);
+  assert.match(deploy, /github\.event\.workflow_run\.pull_requests\[0\]\.base\.ref == 'main'/);
+  assert.match(deploy, /uses: actions\/download-artifact@v4/);
+  assert.match(deploy, /run-id: \$\{\{ github\.event\.workflow_run\.id \}\}/);
+  assert.match(deploy, /name: netlify-preview-dist/);
+  assert.doesNotMatch(deploy, /actions\/checkout|pull_request_target|--prod|--alias|--force/);
 });
 
-test("credential check requires both secrets and exports only a boolean output", () => {
-  const check = readStep("Check Netlify credentials");
-  assert.match(check, /^        id: netlify-credentials$/m);
-  assert.match(check, /NETLIFY_AUTH_TOKEN: \$\{\{ secrets\.NETLIFY_AUTH_TOKEN \}\}/);
-  assert.match(check, /NETLIFY_SITE_ID: \$\{\{ secrets\.NETLIFY_SITE_ID \}\}/);
-  assert.match(check, /\[\[ -n "\$NETLIFY_AUTH_TOKEN" && -n "\$NETLIFY_SITE_ID" \]\]/);
-  assert.match(check, /configured=true/);
-  assert.match(check, /configured=false/);
-  assert.doesNotMatch(check, /npx|netlify-cli/);
+test("deployment secrets exist only in the trusted deploy step", () => {
+  const deployStep = deploy.slice(deploy.indexOf("      - name: Create Netlify draft deploy"));
+  assert.match(deployStep, /NETLIFY_AUTH_TOKEN: \$\{\{ secrets\.NETLIFY_AUTH_TOKEN \}\}/);
+  assert.match(deployStep, /NETLIFY_SITE_ID: \$\{\{ secrets\.NETLIFY_SITE_ID \}\}/);
+  assert.doesNotMatch(deploy.slice(0, deploy.indexOf("      - name: Create Netlify draft deploy")), /secrets\.|NETLIFY_AUTH_TOKEN|NETLIFY_SITE_ID/);
+  assert.match(deployStep, /netlify-cli@23\.11\.0 deploy/);
+  assert.match(deployStep, /--dir=dist/);
+  assert.match(deployStep, /--site="\$NETLIFY_SITE_ID"/);
+  assert.match(deployStep, /result\.deploy_url \|\| result\.deploy_ssl_url \|\| ""/);
+  assert.doesNotMatch(deployStep, /--prod/);
 });
 
-test("draft deploy runs only after successful credential check and never promotes to production", () => {
-  const deploy = readStep("Create Netlify draft deploy");
-  assert.match(deploy, /^        if: steps\.netlify-credentials\.outputs\.configured == 'true'$/m);
-  assert.match(deploy, /NETLIFY_AUTH_TOKEN: \$\{\{ secrets\.NETLIFY_AUTH_TOKEN \}\}/);
-  assert.match(deploy, /NETLIFY_SITE_ID: \$\{\{ secrets\.NETLIFY_SITE_ID \}\}/);
-  assert.match(deploy, /netlify-cli@23\.11\.0 deploy/);
-  assert.match(deploy, /--dir=dist/);
-  assert.match(deploy, /--site="\$NETLIFY_SITE_ID"/);
-  assert.doesNotMatch(deploy, /--prod|--alias|--force/);
-});
-
-test("workflow validates the returned draft URL and propagates failure", () => {
-  const deploy = readStep("Create Netlify draft deploy");
-  assert.match(deploy, /result\.deploy_url \|\| result\.deploy_ssl_url \|\| ""/);
-  assert.match(deploy, /if \[ -z "\$PREVIEW_URL" \]; then/);
-  assert.match(deploy, /::error::Netlify CLI did not return a preview URL/);
-  assert.match(deploy, /set -euo pipefail/);
+test("missing credentials skip deployment without leaking secret values", () => {
+  assert.match(deploy, /if: env\.NETLIFY_AUTH_TOKEN == '' \|\| env\.NETLIFY_SITE_ID == ''/);
+  assert.match(deploy, /::notice::Preview build passed/);
+  assert.match(deploy, /if: env\.NETLIFY_AUTH_TOKEN != '' && env\.NETLIFY_SITE_ID != ''/);
 });
