@@ -30,20 +30,26 @@ test("trusted deployment workflow runs only after successful same-repository PR 
   assert.doesNotMatch(deploy, /actions\/checkout|pull_request_target|--prod|--alias|--force/);
 });
 
-test("deployment secrets exist only in the trusted deploy step", () => {
+test("deployment secrets are read only by trusted credential-check and deploy steps", () => {
+  const check = deploy.slice(deploy.indexOf("      - name: Check Netlify credentials"), deploy.indexOf("      - name: Create Netlify draft deploy"));
   const deployStep = deploy.slice(deploy.indexOf("      - name: Create Netlify draft deploy"));
+  assert.match(check, /^        id: netlify-credentials$/m);
+  assert.match(check, /NETLIFY_AUTH_TOKEN: \$\{\{ secrets\.NETLIFY_AUTH_TOKEN \}\}/);
+  assert.match(check, /NETLIFY_SITE_ID: \$\{\{ secrets\.NETLIFY_SITE_ID \}\}/);
+  assert.match(check, /configured=true/);
+  assert.match(check, /configured=false/);
+  assert.match(deployStep, /^        if: steps\.netlify-credentials\.outputs\.configured == 'true'$/m);
   assert.match(deployStep, /NETLIFY_AUTH_TOKEN: \$\{\{ secrets\.NETLIFY_AUTH_TOKEN \}\}/);
   assert.match(deployStep, /NETLIFY_SITE_ID: \$\{\{ secrets\.NETLIFY_SITE_ID \}\}/);
-  assert.doesNotMatch(deploy.slice(0, deploy.indexOf("      - name: Create Netlify draft deploy")), /secrets\.|NETLIFY_AUTH_TOKEN|NETLIFY_SITE_ID/);
   assert.match(deployStep, /netlify-cli@23\.11\.0 deploy/);
   assert.match(deployStep, /--dir=dist/);
   assert.match(deployStep, /--site="\$NETLIFY_SITE_ID"/);
   assert.match(deployStep, /result\.deploy_url \|\| result\.deploy_ssl_url \|\| ""/);
   assert.doesNotMatch(deployStep, /--prod/);
+  assert.doesNotMatch(deploy.slice(0, deploy.indexOf("      - name: Check Netlify credentials")), /secrets\.|NETLIFY_AUTH_TOKEN|NETLIFY_SITE_ID/);
 });
 
 test("missing credentials skip deployment without leaking secret values", () => {
-  assert.match(deploy, /if: env\.NETLIFY_AUTH_TOKEN == '' \|\| env\.NETLIFY_SITE_ID == ''/);
+  assert.match(deploy, /if: steps\.netlify-credentials\.outputs\.configured == 'true'/);
   assert.match(deploy, /::notice::Preview build passed/);
-  assert.match(deploy, /if: env\.NETLIFY_AUTH_TOKEN != '' && env\.NETLIFY_SITE_ID != ''/);
 });
