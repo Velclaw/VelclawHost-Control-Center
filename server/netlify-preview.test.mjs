@@ -9,7 +9,8 @@ test("PR workflow builds only and uploads a short-lived static artifact", () => 
   assert.match(build, /^on:\n  pull_request:\n    branches: \[main\]/m);
   assert.match(build, /^permissions:\n  contents: read$/m);
   assert.match(build, /uses: actions\/checkout@v4\n        with:\n          persist-credentials: false/);
-  assert.match(build, /run: npm ci/);
+  assert.match(build, /run: npm install --no-audit --no-fund/);
+  assert.doesNotMatch(build, /cache: npm/);
   assert.match(build, /run: npm run build/);
   assert.match(build, /uses: actions\/upload-artifact@v4/);
   assert.match(build, /name: netlify-preview-dist/);
