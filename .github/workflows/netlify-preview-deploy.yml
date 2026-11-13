@@ -33,13 +33,22 @@ jobs:
           repository: ${{ github.repository }}
           run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Skip deploy when Netlify secrets are not configured
-        if: env.NETLIFY_AUTH_TOKEN == '' || env.NETLIFY_SITE_ID == ''
+      - name: Check Netlify credentials
+        id: netlify-credentials
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        shell: bash
         run: |
-          echo "::notice::Preview build passed. Add NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID to repository Actions secrets to enable the Netlify draft deploy."
+          if [[ -n "$NETLIFY_AUTH_TOKEN" && -n "$NETLIFY_SITE_ID" ]]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Preview build passed. Add NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID to repository Actions secrets to enable the Netlify draft deploy."
+          fi
 
       - name: Create Netlify draft deploy
-        if: env.NETLIFY_AUTH_TOKEN != '' && env.NETLIFY_SITE_ID != ''
+        if: steps.netlify-credentials.outputs.configured == 'true'
         shell: bash
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
