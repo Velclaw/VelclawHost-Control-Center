@@ -23,6 +23,16 @@ GitHub OAuth identity, encrypted sessions and initial admin/member role claims a
 - Build command: `npm run build`
 - Publish directory: `dist`
 
+## Netlify Preview workflow
+
+Pull requests opened from this repository can create a **draft Netlify deploy** after the frontend build succeeds. The workflow never uses `--prod`, never changes the production site URL, and skips fork-originated pull requests.
+
+Configure these repository Actions secrets to enable the upload:
+- `NETLIFY_AUTH_TOKEN`: Netlify personal access token.
+- `NETLIFY_SITE_ID`: the existing Netlify project ID.
+
+Secrets are read only by the credential-check and draft-deploy steps; they are not passed to dependency installation or the frontend build. If either secret is missing, the build still runs and the workflow reports a notice without attempting an upload. Do not put credentials in source files, `VITE_*` variables, or chat messages.
+
 ## Security
 Never put provider tokens in `VITE_*` variables or browser code. OAuth exchange and provider API calls must run server-side. Production and destructive operations require explicit authorization and role checks.
 
