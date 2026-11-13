@@ -42,7 +42,10 @@ test("deployment secrets are read only by trusted credential-check and deploy st
   assert.match(deployStep, /^        if: steps\.netlify-credentials\.outputs\.configured == 'true'$/m);
   assert.match(deployStep, /NETLIFY_AUTH_TOKEN: \$\{\{ secrets\.NETLIFY_AUTH_TOKEN \}\}/);
   assert.match(deployStep, /NETLIFY_SITE_ID: \$\{\{ secrets\.NETLIFY_SITE_ID \}\}/);
-  assert.match(deployStep, /netlify-cli@23\.11\.0 deploy/);
+  assert.match(deploy, /name: Install Netlify CLI/);
+  assert.match(deploy, /run: npm install --global netlify-cli@23\.11\.0/);
+  assert.match(deployStep, /netlify deploy/);
+  assert.doesNotMatch(deployStep, /npx/);
   assert.match(deployStep, /--dir=dist/);
   assert.match(deployStep, /--site="\$NETLIFY_SITE_ID"/);
   assert.match(deployStep, /result\.deploy_url \|\| result\.deploy_ssl_url \|\| ""/);
