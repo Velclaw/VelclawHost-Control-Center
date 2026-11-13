@@ -4,6 +4,24 @@ bin-release/
 [Oo]bj/
 [Bb]in/
 
+# Dependencies and build output
+node_modules/
+dist/
+.cache/
+.vite/
+
+# Netlify local state (contains site linkage metadata)
+.netlify/
+
+# Local environment files (keep the documented template)
+.env
+.env.*
+!.env.example
+
+# OS/editor files
+.DS_Store
+*.log
+
 # Other files and folders
 .settings/
 
@@ -13,6 +31,5 @@ bin-release/
 *.ipa
 *.apk
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# Project files, i.e. .project, .actionScriptProperties and .flexProperties
+# Keep IDE project metadata unless explicitly generated locally.

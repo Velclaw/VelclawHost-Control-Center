@@ -1,4 +1,4 @@
-name: Netlify Preview
+name: Netlify Preview Build
 
 on:
   pull_request:
@@ -9,12 +9,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: netlify-preview-pr-${{ github.event.pull_request.number }}
+  group: netlify-preview-build-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  preview:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout pull request
@@ -27,43 +26,17 @@ jobs:
         with:
           node-version: 22
 
-      # PR-controlled package installation and build must never receive Netlify credentials.
+      # PR-controlled code is built without any deployment credentials.
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
 
       - name: Build preview
         run: npm run build
 
-      - name: Check Netlify credentials
-        id: netlify-credentials
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        shell: bash
-        run: |
-          if [[ -n "$NETLIFY_AUTH_TOKEN" && -n "$NETLIFY_SITE_ID" ]]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Preview build passed. Add NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID to repository Actions secrets to enable the Netlify draft deploy."
-          fi
-
-      - name: Create Netlify draft deploy
-        if: steps.netlify-credentials.outputs.configured == 'true'
-        shell: bash
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: |
-          set -euo pipefail
-          OUTPUT="$(npx --yes netlify-cli@23.11.0 deploy \
-            --dir=dist \
-            --site="$NETLIFY_SITE_ID" \
-            --message="Preview for PR #${{ github.event.pull_request.number }}" \
-            --json)"
-          PREVIEW_URL="$(node -e 'const result = JSON.parse(process.argv[1]); process.stdout.write(result.deploy_url || result.deploy_ssl_url || "")' "$OUTPUT")"
-          if [ -z "$PREVIEW_URL" ]; then
-            echo "::error::Netlify CLI did not return a preview URL."
-            exit 1
-          fi
-          echo "Netlify draft preview: $PREVIEW_URL"
+      - name: Upload static preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: netlify-preview-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
