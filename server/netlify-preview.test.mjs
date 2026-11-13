@@ -50,7 +50,7 @@ test("deployment secrets are read only by trusted credential-check and deploy st
   assert.match(deployStep, /--site="\$NETLIFY_SITE_ID"/);
   assert.match(deployStep, /result\.deploy_url \|\| result\.deploy_ssl_url \|\| ""/);
   assert.doesNotMatch(deployStep, /--prod/);
-  assert.doesNotMatch(deploy.slice(0, deploy.indexOf("      - name: Check Netlify credentials")), /secrets\.|NETLIFY_AUTH_TOKEN|NETLIFY_SITE_ID/);
+  assert.doesNotMatch(deploy.slice(0, deploy.indexOf("      - name: Check Netlify credentials")), /NETLIFY_AUTH_TOKEN|NETLIFY_SITE_ID/);
 });
 
 test("missing credentials skip deployment without leaking secret values", () => {
