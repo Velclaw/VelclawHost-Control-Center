@@ -33,6 +33,10 @@ jobs:
           repository: ${{ github.repository }}
           run-id: ${{ github.event.workflow_run.id }}
 
+      # Install the pinned CLI before any deploy credentials enter the environment.
+      - name: Install Netlify CLI
+        run: npm install --global netlify-cli@23.11.0
+
       - name: Check Netlify credentials
         id: netlify-credentials
         env:
@@ -55,7 +59,7 @@ jobs:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: |
           set -euo pipefail
-          OUTPUT="$(npx --yes netlify-cli@23.11.0 deploy \
+          OUTPUT="$(netlify deploy \
             --dir=dist \
             --site="$NETLIFY_SITE_ID" \
             --message="Preview for PR #${{ github.event.workflow_run.pull_requests[0].number }}" \
